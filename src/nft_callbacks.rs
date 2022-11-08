@@ -6,6 +6,7 @@ use near_sdk::borsh::{ BorshSerialize };
 use crate::*;
 use mfight_sdk::market::metadata::MarketOnNftApproveArgs;
 use mfight_sdk::nft::NonFungibleTokenApprovalReceiver;
+use mfight_sdk::reputation::SALE_INCREMENT;
 
 use near_sdk::serde::{ Deserialize, Serialize };
 use schemars::JsonSchema;
@@ -37,6 +38,7 @@ impl NonFungibleTokenApprovalReceiver for Contract {
 
         match near_sdk::serde_json::from_str(&msg).expect("Invalid Args") {
             Args::Market(marketArgs) => {
+                self.reputation.internal_add_reputation(&owner_id, &SALE_INCREMENT);
                 self.market.internal_on_nft_approve(
                     &marketArgs,
                     &nft_contract_id,

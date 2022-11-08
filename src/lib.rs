@@ -15,6 +15,8 @@ use near_sdk::{
 use mfight_sdk::market::base::MarketFeature;
 use mfight_sdk::market::{  TokenId };
 use mfight_sdk::metadata::FungibleTokenId;
+use mfight_sdk::reputation::ReputationFeature;
+use mfight_sdk::reputation::BUY_INCREMENT;
 
 mod ft_callbacks;
 mod nft_callbacks;
@@ -24,6 +26,7 @@ mod nft_callbacks;
 pub struct Contract {
     pub owner_id: AccountId,
     pub market: MarketFeature,
+    pub reputation: ReputationFeature,
 }
 
 /// Helper structure to for keys of the persistent collections.
@@ -57,11 +60,32 @@ impl Contract {
                 StorageKey::FTTokenIds,
                 StorageKey::StorageDeposits
             ),
+            reputation: ReputationFeature::new()
         };
 
         this
     }
+    
+    #[init(ignore_state)]
+    #[private]
+    pub fn migrate() -> Self {
+        #[derive(BorshDeserialize)]
+        struct Old {            
+            owner_id: AccountId,
+            market: MarketFeature,            
+        }
+
+        let old: Old = env::state_read().expect("Error");
+
+        Self {
+            owner_id: old.owner_id,
+            market: old.market,
+            reputation: ReputationFeature::new(),
+        }
+    }
+
 }
 
 mfight_sdk::impl_market_core!(Contract, market);
 mfight_sdk::impl_market_enumeration!(Contract, market);
+mfight_sdk::impl_reputation_feature!(Contract, reputation);
