@@ -12,11 +12,11 @@ use near_sdk::{
     BorshStorageKey,
     assert_self,
 };
+use near_sdk::collections::{ LookupMap, TreeMap, UnorderedSet, UnorderedMap };
 use mfight_sdk::market::base::MarketFeature;
-use mfight_sdk::market::{  TokenId };
+use mfight_sdk::market::{  TokenId, ContractAndTokenId };
 use mfight_sdk::metadata::FungibleTokenId;
 use mfight_sdk::reputation::ReputationFeature;
-use mfight_sdk::reputation::BUY_INCREMENT;
 
 mod ft_callbacks;
 mod nft_callbacks;
@@ -25,8 +25,7 @@ mod nft_callbacks;
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 pub struct Contract {
     pub owner_id: AccountId,
-    pub market: MarketFeature,
-    pub reputation: ReputationFeature,
+    pub market: MarketFeature,    
 }
 
 /// Helper structure to for keys of the persistent collections.
@@ -48,6 +47,8 @@ impl Contract {
 
     #[init]
     pub fn new(owner_id: AccountId) -> Self {
+        let reputation_prefix = b"REPUTATION_FEATURE".to_vec();
+        
         let this = Self {
             owner_id: owner_id.clone().into(),
             market: MarketFeature::new(
@@ -58,9 +59,9 @@ impl Contract {
                 StorageKey::ByOwnerId,
                 StorageKey::ByNFTContractId,
                 StorageKey::FTTokenIds,
-                StorageKey::StorageDeposits
-            ),
-            reputation: ReputationFeature::new()
+                StorageKey::StorageDeposits,
+                Some(reputation_prefix),
+            ),            
         };
 
         this
@@ -69,18 +70,42 @@ impl Contract {
     #[init(ignore_state)]
     #[private]
     pub fn migrate() -> Self {
+    
+        #[derive(BorshDeserialize, BorshSerialize)]
+        struct OldMarket {
+            owner_id: AccountId,
+			sales: UnorderedMap<ContractAndTokenId, Sale>,
+			by_owner_id: TreeMap<AccountId, UnorderedSet<ContractAndTokenId>>,
+			by_nft_contract_id: LookupMap<AccountId, UnorderedSet<TokenId>>,
+			ft_token_ids: UnorderedSet<AccountId>,
+			storage_deposits: LookupMap<AccountId, Balance>,
+			bid_history_length: u8,
+        }
+        
         #[derive(BorshDeserialize)]
         struct Old {            
             owner_id: AccountId,
-            market: MarketFeature,            
+            market: OldMarket,            
         }
 
         let old: Old = env::state_read().expect("Error");
+        
+        let reputation_prefix = b"REPUTATION_FEATURE".to_vec();
+        let market = MarketFeature {
+            
+            owner_id: old.market.owner_id,
+		    sales: old.market.sales,
+		    by_owner_id: old.market.by_owner_id,
+		    by_nft_contract_id: old.market.by_nft_contract_id,
+		    ft_token_ids: old.market.ft_token_ids,
+		    storage_deposits: old.market.storage_deposits,
+		    bid_history_length: old.market.bid_history_length,
+		    reputation: Some(ReputationFeature::new(reputation_prefix)),
+        };
 
         Self {
             owner_id: old.owner_id,
-            market: old.market,
-            reputation: ReputationFeature::new(),
+            market: market,            
         }
     }
 
@@ -88,4 +113,4 @@ impl Contract {
 
 mfight_sdk::impl_market_core!(Contract, market);
 mfight_sdk::impl_market_enumeration!(Contract, market);
-mfight_sdk::impl_reputation_feature!(Contract, reputation);
+mfight_sdk::impl_reputation_feature!(Contract, market);
