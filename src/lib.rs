@@ -36,7 +36,6 @@ pub enum StorageKey {
     ByNFTContractId,
     FTTokenIds,
     StorageDeposits,
-    Fees,
 }
 
 #[near_bindgen]
@@ -61,7 +60,6 @@ impl Contract {
                 StorageKey::ByNFTContractId,
                 StorageKey::FTTokenIds,
                 StorageKey::StorageDeposits,
-                StorageKey::Fees,
                 Some(reputation_prefix),
             ),            
         };
@@ -102,7 +100,6 @@ impl Contract {
 		    ft_token_ids: old.market.ft_token_ids,
 		    storage_deposits: old.market.storage_deposits,
 		    bid_history_length: old.market.bid_history_length,
-		    market_fees_paid: LookupMap::new(StorageKey::Fees),
 		    reputation: Some(ReputationFeature::new(reputation_prefix)),
         };
 
