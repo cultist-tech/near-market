@@ -47,7 +47,7 @@ impl Contract {
 
     #[init]
     pub fn new(owner_id: AccountId) -> Self {
-        let reputation_prefix = b"REPUTATION_FEATURE".to_vec();
+        let reputation_prefix = b"REPUTATION_FEATURE".to_vec();        
         
         let this = Self {
             owner_id: owner_id.clone().into(),
@@ -91,6 +91,7 @@ impl Contract {
         let old: Old = env::state_read().expect("Error");
         
         let reputation_prefix = b"REPUTATION_FEATURE".to_vec();
+        
         let market = MarketFeature {
             
             owner_id: old.market.owner_id,
@@ -113,4 +114,4 @@ impl Contract {
 
 mfight_sdk::impl_market_core!(Contract, market);
 mfight_sdk::impl_market_enumeration!(Contract, market);
-mfight_sdk::impl_reputation_feature!(Contract, market);
+mfight_sdk::impl_reputation_feature!(Contract, market, reputation);
