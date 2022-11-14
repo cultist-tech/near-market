@@ -25,7 +25,7 @@ mod nft_callbacks;
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 pub struct Contract {
     pub owner_id: AccountId,
-    pub market: MarketFeature,    
+    pub market: MarketFeature,
 }
 
 /// Helper structure to for keys of the persistent collections.
@@ -36,6 +36,7 @@ pub enum StorageKey {
     ByNFTContractId,
     FTTokenIds,
     StorageDeposits,
+    Reputation,
 }
 
 #[near_bindgen]
@@ -47,8 +48,6 @@ impl Contract {
 
     #[init]
     pub fn new(owner_id: AccountId) -> Self {
-        let reputation_prefix = b"REPUTATION_FEATURE".to_vec();        
-        
         let this = Self {
             owner_id: owner_id.clone().into(),
             market: MarketFeature::new(
@@ -60,17 +59,17 @@ impl Contract {
                 StorageKey::ByNFTContractId,
                 StorageKey::FTTokenIds,
                 StorageKey::StorageDeposits,
-                Some(reputation_prefix),
-            ),            
+                Some(StorageKey::Reputation),
+            ),
         };
 
         this
     }
-    
+
     #[init(ignore_state)]
     #[private]
     pub fn migrate() -> Self {
-    
+
         #[derive(BorshDeserialize, BorshSerialize)]
         struct OldMarket {
             owner_id: AccountId,
@@ -80,20 +79,18 @@ impl Contract {
 			ft_token_ids: UnorderedSet<AccountId>,
 			storage_deposits: LookupMap<AccountId, Balance>,
 			bid_history_length: u8,
+            reputation: Option<ReputationFeature>,
         }
-        
+
         #[derive(BorshDeserialize)]
-        struct Old {            
+        struct Old {
             owner_id: AccountId,
-            market: OldMarket,            
+            market: OldMarket,
         }
 
         let old: Old = env::state_read().expect("Error");
-        
-        let reputation_prefix = b"REPUTATION_FEATURE".to_vec();
-        
+
         let market = MarketFeature {
-            
             owner_id: old.market.owner_id,
 		    sales: old.market.sales,
 		    by_owner_id: old.market.by_owner_id,
@@ -101,12 +98,12 @@ impl Contract {
 		    ft_token_ids: old.market.ft_token_ids,
 		    storage_deposits: old.market.storage_deposits,
 		    bid_history_length: old.market.bid_history_length,
-		    reputation: Some(ReputationFeature::new(reputation_prefix)),
+		    reputation: old.market.reputation,
         };
 
         Self {
             owner_id: old.owner_id,
-            market: market,            
+            market: market,
         }
     }
 
