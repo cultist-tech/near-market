@@ -1,8 +1,4 @@
-use near_sdk::json_types::{ U64 };
 use near_sdk::{ env, near_bindgen };
-use near_sdk::collections::UnorderedSet;
-use std::collections::HashMap;
-use near_sdk::borsh::{ BorshSerialize };
 use crate::*;
 use mfight_sdk::market::metadata::MarketOnNftApproveArgs;
 use mfight_sdk::nft::NonFungibleTokenApprovalReceiver;
@@ -36,7 +32,7 @@ impl NonFungibleTokenApprovalReceiver for Contract {
         assert_eq!(&owner_id, &signer_id, "owner_id should be signer_id");
 
         match near_sdk::serde_json::from_str(&msg).expect("Invalid Args") {
-            Args::Market(marketArgs) => {
+            Args::Market(marketArgs) => {                
                 self.market.internal_on_nft_approve(
                     &marketArgs,
                     &nft_contract_id,
